@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Vec3 {
     pub x: f64,
     pub y: f64,
@@ -13,6 +13,22 @@ pub type Point = Vec3;
 impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
+    }
+
+    pub fn new_eq(x: f64) -> Self {
+        Self::new(x, x, x)
+    }
+
+    pub fn x(x: f64) -> Self {
+        Self::new(x, 0.0, 0.0)
+    }
+
+    pub fn y(y: f64) -> Self {
+        Self::new(0.0, y, 0.0)
+    }
+
+    pub fn z(z: f64) -> Self {
+        Self::new(0.0, 0.0, z)
     }
 
     #[inline]

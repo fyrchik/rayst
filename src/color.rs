@@ -1,6 +1,8 @@
 use std::fmt;
 use std::ops::{Add, Mul};
 
+use crate::vec3::Vec3;
+
 pub struct Color {
     r: f64,
     g: f64,
@@ -10,6 +12,14 @@ pub struct Color {
 impl Color {
     pub fn new(r: f64, g: f64, b: f64) -> Self {
         Self { r, g, b }
+    }
+
+    pub fn new_from_vec3(v: Vec3) -> Self {
+        Self {
+            r: v.x,
+            g: v.y,
+            b: v.z,
+        }
     }
 }
 
