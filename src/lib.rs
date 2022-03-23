@@ -1,3 +1,6 @@
+pub mod color;
+pub mod vec3;
+
 #[cfg(test)]
 mod tests {
     #[test]
