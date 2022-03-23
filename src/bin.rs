@@ -48,7 +48,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn hit_sphere(center: &Point, radius: f64, r: &Ray) -> bool {
+    let oc = r.orig - *center;
+    let a = r.dir.dot(r.dir);
+    let b = 2.0 * oc.dot(r.dir);
+    let c = oc.dot(oc) - radius * radius;
+    let d = b * b - 4.0 * a * c;
+    d > 0.0
+}
+
 fn ray_color(r: &Ray) -> Color {
+    if hit_sphere(&Point::new(0.0, 0.0, -1.0), 0.5, r) {
+        return Color::new(1.0, 0.0, 0.0);
+    }
+
     let dir = r.dir.normalize();
     let t = 0.5 * (dir.y + 1.0);
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
