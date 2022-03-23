@@ -14,3 +14,4 @@ name = "rayst-render"
 path = "src/bin.rs"
 
 [dependencies]
+rand = "0.8.5"

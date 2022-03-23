@@ -1,8 +1,8 @@
-use std::fmt;
-use std::ops::{Add, Mul};
+use std::ops::{Add, AddAssign, Mul};
 
 use crate::vec3::Vec3;
 
+#[derive(Clone, Debug, Default)]
 pub struct Color {
     r: f64,
     g: f64,
@@ -21,16 +21,17 @@ impl Color {
             b: v.z,
         }
     }
-}
 
-impl fmt::Display for Color {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(
-            f,
-            "{} {} {}",
-            (255.999 * self.r) as u32,
-            (255.999 * self.g) as u32,
-            (255.999 * self.b) as u32
+    pub fn adjust_and_format(&self, samples: u32) -> String {
+        let scale = 1.0 / samples as f64;
+        let r = self.r * scale;
+        let g = self.g * scale;
+        let b = self.b * scale;
+        format!(
+            "{} {} {}\n",
+            (256.0 * r.clamp(0.0, 0.999)) as u32,
+            (256.0 * g.clamp(0.0, 0.999)) as u32,
+            (256.0 * b.clamp(0.0, 0.999)) as u32
         )
     }
 }
@@ -45,6 +46,14 @@ impl Add for Color {
             g: self.g + other.g,
             b: self.b + other.b,
         }
+    }
+}
+
+impl AddAssign for Color {
+    fn add_assign(&mut self, other: Color) {
+        self.r += other.r;
+        self.g += other.g;
+        self.b += other.b;
     }
 }
 
