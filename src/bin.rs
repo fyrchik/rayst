@@ -2,15 +2,10 @@ use std::error::Error;
 use std::io::{self, Write};
 use std::rc::Rc;
 
-use rayst::vec3;
+use rayst::material::{Lambertian, Metal};
 use rayst::{
-    camera::Camera,
-    color::Color,
-    hittable::{HitRecord, Hittable},
-    hittable_list::HittableList,
-    ray::Ray,
-    sphere::Sphere,
-    vec3::Point,
+    camera::Camera, color::Color, hittable::Hittable, hittable_list::HittableList, ray::Ray,
+    sphere::Sphere, vec3::Point,
 };
 
 use rand::{distributions::Uniform, Rng};
@@ -25,8 +20,32 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // World.
     let mut world = HittableList::default();
-    world.add(Rc::new(Sphere::new(Point::z(-1.0), 0.5)));
-    world.add(Rc::new(Sphere::new(Point::new(0.0, -100.5, -1.0), 100.0)));
+
+    let material_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.3)));
+    let material_center = Rc::new(Lambertian::new(Color::new(0.7, 0.3, 0.3)));
+    let material_left = Rc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.3));
+    let material_right = Rc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 1.0));
+
+    world.add(Rc::new(Sphere::new(
+        Point::new(0.0, -100.5, -1.0),
+        100.0,
+        material_ground,
+    )));
+    world.add(Rc::new(Sphere::new(
+        Point::new(0.0, 0.0, -1.0),
+        0.5,
+        material_center,
+    )));
+    world.add(Rc::new(Sphere::new(
+        Point::new(-1.0, 0.0, -1.0),
+        0.5,
+        material_left,
+    )));
+    world.add(Rc::new(Sphere::new(
+        Point::new(1.0, 0.0, -1.0),
+        0.5,
+        material_right,
+    )));
 
     // Camera.
     let cam = Camera::default();
@@ -57,16 +76,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn ray_color(r: &Ray, world: &HittableList, depth: i32) -> Color {
-    let mut rec = HitRecord::default();
-
     if depth <= 0 {
         return Color::default();
     }
-    if world.hit(r, 0.001, f64::INFINITY, &mut rec) {
-        let mut rng = rand::thread_rng();
-        let uni = Uniform::new(-1.0, 1.0);
-        let target = rec.p + vec3::random_in_hemisphere(&mut rng, &uni, rec.normal);
-        return 0.5 * ray_color(&Ray::new(rec.p, target - rec.p), world, depth - 1);
+
+    if let Some(rec) = world.hit(r, 0.001, f64::INFINITY) {
+        if let Some((scattered, attenuation)) = rec
+            .material
+            .scatter(r, &rec)
+        {
+            return attenuation * ray_color(&scattered, world, depth - 1);
+        }
+        return Color::default();
     }
 
     let dir = r.dir.normalize();

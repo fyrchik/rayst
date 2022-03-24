@@ -1,6 +1,7 @@
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub};
 
+use rand::distributions::Uniform;
 use rand::{distributions::Distribution, Rng};
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -66,11 +67,22 @@ impl Vec3 {
     pub fn random<R: Rng, D: Distribution<f64>>(rng: &mut R, dist: &D) -> Vec3 {
         Self::new(dist.sample(rng), dist.sample(rng), dist.sample(rng))
     }
+
+    pub fn near_zero(&self) -> bool {
+        const EPSILON: f64 = 1e-8;
+        self.x.abs() < EPSILON && self.y.abs() < EPSILON && self.z.abs() < EPSILON
+    }
+
+    pub fn reflect(&self, v: Vec3) -> Vec3 {
+        *self - 2.0 * self.dot(v) * v
+    }
 }
 
-pub fn random_in_unit_sphere<R: Rng, D: Distribution<f64>>(rng: &mut R, dist: &D) -> Vec3 {
+pub fn random_in_unit_sphere() -> Vec3 {
+    let mut rng = rand::thread_rng();
+    let uni = Uniform::<f64>::new(-1.0, 1.0);
     loop {
-        let p = Vec3::random(rng, dist);
+        let p = Vec3::random(&mut rng, &uni);
         if p.length_squared() >= 1.0 {
             continue;
         }
@@ -78,12 +90,8 @@ pub fn random_in_unit_sphere<R: Rng, D: Distribution<f64>>(rng: &mut R, dist: &D
     }
 }
 
-pub fn random_in_hemisphere<R: Rng, D: Distribution<f64>>(
-    rng: &mut R,
-    dist: &D,
-    normal: Vec3,
-) -> Vec3 {
-    let p = random_in_unit_sphere(rng, dist);
+pub fn random_in_hemisphere(normal: Vec3) -> Vec3 {
+    let p = random_in_unit_sphere();
     if p.dot(normal) > 0.0 {
         p
     } else {
