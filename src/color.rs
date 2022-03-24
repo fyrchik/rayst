@@ -24,9 +24,12 @@ impl Color {
 
     pub fn adjust_and_format(&self, samples: u32) -> String {
         let scale = 1.0 / samples as f64;
-        let r = self.r * scale;
-        let g = self.g * scale;
-        let b = self.b * scale;
+
+        // `.srqt()` stays for gamma correction with gamma=2.0
+        let r = (self.r * scale).sqrt();
+        let g = (self.g * scale).sqrt();
+        let b = (self.b * scale).sqrt();
+
         format!(
             "{} {} {}\n",
             (256.0 * r.clamp(0.0, 0.999)) as u32,

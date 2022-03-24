@@ -2,6 +2,7 @@ use std::error::Error;
 use std::io::{self, Write};
 use std::rc::Rc;
 
+use rayst::vec3;
 use rayst::{
     camera::Camera,
     color::Color,
@@ -9,7 +10,7 @@ use rayst::{
     hittable_list::HittableList,
     ray::Ray,
     sphere::Sphere,
-    vec3::{Point, Vec3},
+    vec3::Point,
 };
 
 use rand::{distributions::Uniform, Rng};
@@ -20,6 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let image_width: u32 = 400;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
     let samples_per_pixel: u32 = 100;
+    let max_depth = 50;
 
     // World.
     let mut world = HittableList::default();
@@ -43,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let u = (i as f64 + rng.sample(uni)) / (image_width - 1) as f64;
                 let v = (j as f64 + rng.sample(uni)) / (image_height - 1) as f64;
                 let r = cam.get_ray(u, v);
-                c += ray_color(&r, &world);
+                c += ray_color(&r, &world, max_depth);
             }
             println!("{}", c.adjust_and_format(samples_per_pixel));
         }
@@ -54,10 +56,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn ray_color(r: &Ray, world: &HittableList) -> Color {
+fn ray_color(r: &Ray, world: &HittableList, depth: i32) -> Color {
     let mut rec = HitRecord::default();
-    if world.hit(r, 0.0, f64::INFINITY, &mut rec) {
-        return 0.5 * (Color::new_from_vec3(rec.normal + Vec3::new_eq(1.0)));
+
+    if depth <= 0 {
+        return Color::default();
+    }
+    if world.hit(r, 0.001, f64::INFINITY, &mut rec) {
+        let mut rng = rand::thread_rng();
+        let uni = Uniform::new(-1.0, 1.0);
+        let target = rec.p + vec3::random_in_hemisphere(&mut rng, &uni, rec.normal);
+        return 0.5 * ray_color(&Ray::new(rec.p, target - rec.p), world, depth - 1);
     }
 
     let dir = r.dir.normalize();

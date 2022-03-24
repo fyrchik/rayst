@@ -1,6 +1,8 @@
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub};
 
+use rand::{distributions::Distribution, Rng};
+
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Vec3 {
     pub x: f64,
@@ -58,6 +60,34 @@ impl Vec3 {
     #[inline]
     pub fn normalize(self) -> Vec3 {
         self / self.length()
+    }
+
+    #[inline]
+    pub fn random<R: Rng, D: Distribution<f64>>(rng: &mut R, dist: &D) -> Vec3 {
+        Self::new(dist.sample(rng), dist.sample(rng), dist.sample(rng))
+    }
+}
+
+pub fn random_in_unit_sphere<R: Rng, D: Distribution<f64>>(rng: &mut R, dist: &D) -> Vec3 {
+    loop {
+        let p = Vec3::random(rng, dist);
+        if p.length_squared() >= 1.0 {
+            continue;
+        }
+        return p;
+    }
+}
+
+pub fn random_in_hemisphere<R: Rng, D: Distribution<f64>>(
+    rng: &mut R,
+    dist: &D,
+    normal: Vec3,
+) -> Vec3 {
+    let p = random_in_unit_sphere(rng, dist);
+    if p.dot(normal) > 0.0 {
+        p
+    } else {
+        -p
     }
 }
 
