@@ -76,6 +76,13 @@ impl Vec3 {
     pub fn reflect(&self, v: Vec3) -> Vec3 {
         *self - 2.0 * self.dot(v) * v
     }
+
+    pub fn refract(&self, normal: Vec3, eta1_over_eta2: f64) -> Vec3 {
+        let cos_theta = (-self.dot(normal)).min(1.0);
+        let r_out_perp = eta1_over_eta2 * (*self + cos_theta * normal);
+        let r_out_para = -(1.0 - r_out_perp.length_squared()).abs().sqrt() * normal;
+        r_out_perp + r_out_para
+    }
 }
 
 pub fn random_in_unit_sphere() -> Vec3 {

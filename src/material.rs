@@ -46,3 +46,51 @@ impl Material for Metal {
         }
     }
 }
+
+pub struct Dielectric {
+    ri: f64,
+}
+
+impl Dielectric {
+    pub fn new(refraction_index: f64) -> Self {
+        Self {
+            ri: refraction_index,
+        }
+    }
+
+    fn reflectance(cosine: f64, rr: f64) -> f64 {
+        // Use Schlick's approximation.
+        let r0 = (1.0 - rr) / (1.0 + rr);
+        let r1 = r0.powi(2);
+        r1 + (1.0 - r1) * (1.0 - cosine).powi(5)
+    }
+}
+
+impl Material for Dielectric {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+        let refraction_ratio = if rec.front_face {
+            self.ri.recip()
+        } else {
+            self.ri
+        };
+        let unit_direction = r_in.dir.normalize();
+        let cos_theta = (-unit_direction).dot(rec.normal).min(1.0);
+        let sin_theta = (1.0 - cos_theta.powi(2)).sqrt();
+        let cannot_refract = refraction_ratio * sin_theta > 1.0;
+        let direction =
+            if cannot_refract || Self::reflectance(cos_theta, refraction_ratio) > random_double() {
+                unit_direction.reflect(rec.normal)
+            } else {
+                unit_direction.refract(rec.normal, refraction_ratio)
+            };
+        Some((Ray::new(rec.p, direction), Color::new(1.0, 1.0, 1.0)))
+    }
+}
+
+fn random_double() -> f64 {
+    use rand::distributions::{Distribution, Uniform};
+
+    let mut rng = rand::thread_rng();
+    let uni = Uniform::<f64>::new(0.0, 1.0);
+    uni.sample(&mut rng)
+}
