@@ -3,6 +3,7 @@ use std::io::{self, Write};
 use std::rc::Rc;
 
 use rayst::material::{Dielectric, Lambertian, Metal};
+use rayst::vec3::Vec3;
 use rayst::{
     camera::Camera, color::Color, hittable::Hittable, hittable_list::HittableList, ray::Ray,
     sphere::Sphere, vec3::Point,
@@ -21,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // World.
     let mut world = HittableList::default();
 
-    let material_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.3)));
+    let material_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
     let material_center = Rc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
     let material_left = Rc::new(Dielectric::new(1.5));
     let material_right = Rc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0));
@@ -31,11 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         100.0,
         material_ground,
     )));
-    world.add(Rc::new(Sphere::new(
-        Point::new(0.0, 0.0, -1.0),
-        0.5,
-        material_center,
-    )));
+    world.add(Rc::new(Sphere::new(Point::z(-1.0), 0.5, material_center)));
     world.add(Rc::new(Sphere::new(
         Point::new(-1.0, 0.0, -1.0),
         0.5,
@@ -43,8 +40,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     )));
     world.add(Rc::new(Sphere::new(
         Point::new(-1.0, 0.0, -1.0),
-        -0.47,
-        material_left,
+        -0.45,
+        material_left.clone(),
     )));
     world.add(Rc::new(Sphere::new(
         Point::new(1.0, 0.0, -1.0),
@@ -53,7 +50,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     )));
 
     // Camera.
-    let cam = Camera::default();
+    let cam = Camera::new(
+        Point::new(-2.0, 2.0, 1.0),
+        Point::z(-1.0),
+        Vec3::y(1.0),
+        20.0,
+        aspect_ratio,
+    );
 
     let mut stderr = io::stderr();
     let mut rng = rand::thread_rng();
