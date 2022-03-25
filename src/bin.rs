@@ -50,12 +50,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     )));
 
     // Camera.
+    let look_from = Point::new(3.0, 3.0, 2.0);
+    let look_at = Point::z(-1.0);
+    let vup = Vec3::y(1.0);
+    let dist_to_focus = (look_from - look_at).length();
+    let aperture = 2.0;
+
     let cam = Camera::new(
-        Point::new(-2.0, 2.0, 1.0),
-        Point::z(-1.0),
-        Vec3::y(1.0),
+        look_from,
+        look_at,
+        vup,
         20.0,
         aspect_ratio,
+        aperture,
+        dist_to_focus,
     );
 
     let mut stderr = io::stderr();

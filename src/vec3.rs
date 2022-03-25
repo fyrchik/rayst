@@ -106,6 +106,20 @@ pub fn random_in_hemisphere(normal: Vec3) -> Vec3 {
     }
 }
 
+pub fn random_in_unit_disc() -> Vec3 {
+    let mut rng = rand::thread_rng();
+    let uni = Uniform::<f64>::new(-1.0, 1.0);
+    loop {
+        let x = rng.sample(uni);
+        let y = rng.sample(uni);
+        let p = Vec3::new(x, y, 0.0);
+        if p.length_squared() >= 1.0 {
+            continue;
+        }
+        return p;
+    }
+}
+
 impl fmt::Display for Vec3 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} {}", self.x, self.y, self.z)
