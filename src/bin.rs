@@ -2,7 +2,7 @@ use std::error::Error;
 use std::io::{self, Write};
 use std::rc::Rc;
 
-use rayst::material::{Dielectric, Lambertian, Metal};
+use rayst::material::{Dielectric, Lambertian, Material, Metal};
 use rayst::vec3::Vec3;
 use rayst::{
     camera::Camera, color::Color, hittable::Hittable, hittable_list::HittableList, ray::Ray,
@@ -13,48 +13,21 @@ use rand::{distributions::Uniform, Rng};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Image.
-    let aspect_ratio: f64 = 16.0 / 9.0;
-    let image_width: u32 = 400;
+    let aspect_ratio: f64 = 3.0 / 2.0;
+    let image_width: u32 = 1200;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel: u32 = 100;
+    let samples_per_pixel: u32 = 500;
     let max_depth = 50;
 
     // World.
-    let mut world = HittableList::default();
-
-    let material_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
-    let material_center = Rc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
-    let material_left = Rc::new(Dielectric::new(1.5));
-    let material_right = Rc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0));
-
-    world.add(Rc::new(Sphere::new(
-        Point::new(0.0, -100.5, -1.0),
-        100.0,
-        material_ground,
-    )));
-    world.add(Rc::new(Sphere::new(Point::z(-1.0), 0.5, material_center)));
-    world.add(Rc::new(Sphere::new(
-        Point::new(-1.0, 0.0, -1.0),
-        0.5,
-        material_left.clone(),
-    )));
-    world.add(Rc::new(Sphere::new(
-        Point::new(-1.0, 0.0, -1.0),
-        -0.45,
-        material_left.clone(),
-    )));
-    world.add(Rc::new(Sphere::new(
-        Point::new(1.0, 0.0, -1.0),
-        0.5,
-        material_right,
-    )));
+    let world = random_scene();
 
     // Camera.
-    let look_from = Point::new(3.0, 3.0, 2.0);
-    let look_at = Point::z(-1.0);
+    let look_from = Point::new(13.0, 2.0, 3.0);
+    let look_at = Point::default();
     let vup = Vec3::y(1.0);
-    let dist_to_focus = (look_from - look_at).length();
-    let aperture = 2.0;
+    let dist_to_focus = 10.0;
+    let aperture = 0.1;
 
     let cam = Camera::new(
         look_from,
@@ -106,4 +79,67 @@ fn ray_color(r: &Ray, world: &HittableList, depth: i32) -> Color {
     let dir = r.dir.normalize();
     let t = 0.5 * (dir.y + 1.0);
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+}
+
+fn random_scene() -> HittableList {
+    let mut world = HittableList::default();
+    let ground_material = Rc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
+    world.add(Rc::new(Sphere::new(
+        Point::y(-1000.0),
+        1000.0,
+        ground_material,
+    )));
+
+    let mut rng = rand::thread_rng();
+    let dist01 = Uniform::<f64>::new(0.0, 1.0);
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = (&mut rng).sample(dist01);
+            let center = Point::new(
+                a as f64 + 0.9 * rng.sample(dist01),
+                0.2,
+                b as f64 + 0.9 * rng.sample(dist01),
+            );
+
+            if (center - Point::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                let material: Rc<dyn Material> = if choose_mat < 0.8 {
+                    let r: Vec<f64> = (&mut rng).sample_iter(dist01).take(6).collect();
+                    let albedo: Color = rng.gen() + rng.gen();
+                    Rc::new(Lambertian::new(albedo)) as Rc<dyn Material>
+                } else if choose_mat < 0.95 {
+                    let r: Vec<f64> = (&mut rng)
+                        .sample_iter(dist01)
+                        .take(3)
+                        .map(|x| x / 2.0 + 0.5)
+                        .collect();
+                    let albedo = Color::new(r[0], r[1], r[2]);
+                    Rc::new(Metal::new(albedo, (&mut rng).sample(dist01) / 2.0)) as Rc<dyn Material>
+                } else {
+                    Rc::new(Dielectric::new(1.5)) as Rc<dyn Material>
+                };
+
+                world.add(Rc::new(Sphere::new(center, 0.2, material)))
+            }
+        }
+    }
+
+    let material1 = Rc::new(Dielectric::new(1.5));
+    world.add(Rc::new(Sphere::new(Point::y(1.0), 1.0, material1)));
+
+    let material2 = Rc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
+    world.add(Rc::new(Sphere::new(
+        Point::new(-4.0, 1.0, 0.0),
+        1.0,
+        material2,
+    )));
+
+    let material3 = Rc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
+    world.add(Rc::new(Sphere::new(
+        Point::new(4.0, 1.0, 0.0),
+        1.0,
+        material3,
+    )));
+
+    world
 }
