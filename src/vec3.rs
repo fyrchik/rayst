@@ -1,8 +1,7 @@
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub};
 
-use rand::distributions::Uniform;
-use rand::{distributions::Distribution, Rng};
+use rand::{rngs::ThreadRng, Rng};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Vec3 {
@@ -63,11 +62,6 @@ impl Vec3 {
         self / self.length()
     }
 
-    #[inline]
-    pub fn random<R: Rng, D: Distribution<f64>>(rng: &mut R, dist: &D) -> Vec3 {
-        Self::new(dist.sample(rng), dist.sample(rng), dist.sample(rng))
-    }
-
     pub fn near_zero(&self) -> bool {
         const EPSILON: f64 = 1e-8;
         self.x.abs() < EPSILON && self.y.abs() < EPSILON && self.z.abs() < EPSILON
@@ -85,11 +79,13 @@ impl Vec3 {
     }
 }
 
-pub fn random_in_unit_sphere() -> Vec3 {
-    let mut rng = rand::thread_rng();
-    let uni = Uniform::<f64>::new(-1.0, 1.0);
+pub fn random_in_unit_sphere(rng: &mut ThreadRng) -> Vec3 {
     loop {
-        let p = Vec3::random(&mut rng, &uni);
+        let p = Vec3::new(
+            rng.gen_range(-1.0..1.0),
+            rng.gen_range(-1.0..1.0),
+            rng.gen_range(-1.0..1.0),
+        );
         if p.length_squared() >= 1.0 {
             continue;
         }
@@ -97,8 +93,8 @@ pub fn random_in_unit_sphere() -> Vec3 {
     }
 }
 
-pub fn random_in_hemisphere(normal: Vec3) -> Vec3 {
-    let p = random_in_unit_sphere();
+pub fn random_in_hemisphere(rng: &mut ThreadRng, normal: Vec3) -> Vec3 {
+    let p = random_in_unit_sphere(rng);
     if p.dot(normal) > 0.0 {
         p
     } else {
@@ -106,12 +102,10 @@ pub fn random_in_hemisphere(normal: Vec3) -> Vec3 {
     }
 }
 
-pub fn random_in_unit_disc() -> Vec3 {
-    let mut rng = rand::thread_rng();
-    let uni = Uniform::<f64>::new(-1.0, 1.0);
+pub fn random_in_unit_disc(rng: &mut ThreadRng) -> Vec3 {
     loop {
-        let x = rng.sample(uni);
-        let y = rng.sample(uni);
+        let x = rng.gen_range(-1.0..1.0);
+        let y = rng.gen_range(-1.0..1.0);
         let p = Vec3::new(x, y, 0.0);
         if p.length_squared() >= 1.0 {
             continue;

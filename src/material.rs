@@ -1,7 +1,9 @@
-use crate::{color::Color, hittable::HitRecord, ray::Ray, vec3};
+use crate::{color::Color, hittable::HitRecord, ray::Ray, vec3::random_in_unit_sphere};
+
+use rand::{rngs::ThreadRng, Rng};
 
 pub trait Material {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)>;
+    fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)>;
 }
 
 pub struct Lambertian {
@@ -15,8 +17,8 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, _: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
-        let mut scatter_direction = rec.normal + vec3::random_in_unit_sphere();
+    fn scatter(&self, rng: &mut ThreadRng, _: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+        let mut scatter_direction = rec.normal + random_in_unit_sphere(rng);
         if scatter_direction.near_zero() {
             scatter_direction = rec.normal;
         }
@@ -36,9 +38,9 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+    fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
         let reflected = r_in.dir.normalize().reflect(rec.normal);
-        let scattered = Ray::new(rec.p, reflected + self.fuzz * vec3::random_in_unit_sphere());
+        let scattered = Ray::new(rec.p, reflected + self.fuzz * random_in_unit_sphere(rng));
         if scattered.dir.dot(rec.normal) > 0.0 {
             Some((scattered, self.albedo))
         } else {
@@ -67,7 +69,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+    fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
         let refraction_ratio = if rec.front_face {
             self.ri.recip()
         } else {
@@ -77,20 +79,13 @@ impl Material for Dielectric {
         let cos_theta = (-unit_direction).dot(rec.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta.powi(2)).sqrt();
         let cannot_refract = refraction_ratio * sin_theta > 1.0;
-        let direction =
-            if cannot_refract || Self::reflectance(cos_theta, refraction_ratio) > random_double() {
-                unit_direction.reflect(rec.normal)
-            } else {
-                unit_direction.refract(rec.normal, refraction_ratio)
-            };
+        let direction = if cannot_refract
+            || Self::reflectance(cos_theta, refraction_ratio) > rng.gen::<f64>()
+        {
+            unit_direction.reflect(rec.normal)
+        } else {
+            unit_direction.refract(rec.normal, refraction_ratio)
+        };
         Some((Ray::new(rec.p, direction), Color::new(1.0, 1.0, 1.0)))
     }
-}
-
-fn random_double() -> f64 {
-    use rand::distributions::{Distribution, Uniform};
-
-    let mut rng = rand::thread_rng();
-    let uni = Uniform::<f64>::new(0.0, 1.0);
-    uni.sample(&mut rng)
 }

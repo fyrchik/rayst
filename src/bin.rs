@@ -9,7 +9,7 @@ use rayst::{
     sphere::Sphere, vec3::Point,
 };
 
-use rand::{distributions::Uniform, Rng};
+use rand::{rngs::ThreadRng, Rng};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Image.
@@ -41,7 +41,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut stderr = io::stderr();
     let mut rng = rand::thread_rng();
-    let uni = Uniform::<f64>::new(0.0, 1.0);
 
     println!("P3\n{} {}\n255", image_width, image_height);
     for j in (0..image_height).rev() {
@@ -50,10 +49,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         for i in 0..image_width {
             let mut c = Color::default();
             for _ in 0..samples_per_pixel {
-                let u = (i as f64 + rng.sample(uni)) / (image_width - 1) as f64;
-                let v = (j as f64 + rng.sample(uni)) / (image_height - 1) as f64;
-                let r = cam.get_ray(u, v);
-                c += ray_color(&r, &world, max_depth);
+                let u = (i as f64 + rng.gen::<f64>()) / (image_width - 1) as f64;
+                let v = (j as f64 + rng.gen::<f64>()) / (image_height - 1) as f64;
+                let r = cam.get_ray(&mut rng, u, v);
+                c += ray_color(&mut rng, &r, &world, max_depth);
             }
             println!("{}", c.adjust_and_format(samples_per_pixel));
         }
@@ -64,14 +63,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn ray_color(r: &Ray, world: &HittableList, depth: i32) -> Color {
+fn ray_color(rng: &mut ThreadRng, r: &Ray, world: &HittableList, depth: i32) -> Color {
     if depth <= 0 {
         return Color::default();
     }
 
     if let Some(rec) = world.hit(r, 0.001, f64::INFINITY) {
-        if let Some((scattered, attenuation)) = rec.material.scatter(r, &rec) {
-            return attenuation * ray_color(&scattered, world, depth - 1);
+        if let Some((scattered, attenuation)) = rec.material.scatter(rng, r, &rec) {
+            return attenuation * ray_color(rng, &scattered, world, depth - 1);
         }
         return Color::default();
     }
@@ -91,30 +90,27 @@ fn random_scene() -> HittableList {
     )));
 
     let mut rng = rand::thread_rng();
-    let dist01 = Uniform::<f64>::new(0.0, 1.0);
 
     for a in -11..11 {
         for b in -11..11 {
-            let choose_mat = (&mut rng).sample(dist01);
+            let choose_mat: f64 = (&mut rng).gen();
             let center = Point::new(
-                a as f64 + 0.9 * rng.sample(dist01),
+                a as f64 + 0.9 * rng.gen::<f64>(),
                 0.2,
-                b as f64 + 0.9 * rng.sample(dist01),
+                b as f64 + 0.9 * rng.gen::<f64>(),
             );
 
             if (center - Point::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 let material: Rc<dyn Material> = if choose_mat < 0.8 {
-                    let r: Vec<f64> = (&mut rng).sample_iter(dist01).take(6).collect();
-                    let albedo: Color = rng.gen() + rng.gen();
+                    let albedo: Color = rng.gen::<Color>() + rng.gen::<Color>();
                     Rc::new(Lambertian::new(albedo)) as Rc<dyn Material>
                 } else if choose_mat < 0.95 {
-                    let r: Vec<f64> = (&mut rng)
-                        .sample_iter(dist01)
-                        .take(3)
-                        .map(|x| x / 2.0 + 0.5)
-                        .collect();
-                    let albedo = Color::new(r[0], r[1], r[2]);
-                    Rc::new(Metal::new(albedo, (&mut rng).sample(dist01) / 2.0)) as Rc<dyn Material>
+                    let albedo: Color = Color::new(
+                        rng.gen_range(0.5..1.0),
+                        rng.gen_range(0.5..1.0),
+                        rng.gen_range(0.5..1.0),
+                    );
+                    Rc::new(Metal::new(albedo, rng.gen_range(0.0..0.5))) as Rc<dyn Material>
                 } else {
                     Rc::new(Dielectric::new(1.5)) as Rc<dyn Material>
                 };

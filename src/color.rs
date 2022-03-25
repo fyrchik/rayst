@@ -2,6 +2,11 @@ use std::ops::{Add, AddAssign, Mul};
 
 use crate::vec3::Vec3;
 
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Color {
     r: f64,
@@ -36,6 +41,12 @@ impl Color {
             (256.0 * g.clamp(0.0, 0.999)) as u32,
             (256.0 * b.clamp(0.0, 0.999)) as u32
         )
+    }
+}
+
+impl Distribution<Color> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Color {
+        Color::new(rng.gen(), rng.gen(), rng.gen())
     }
 }
 
