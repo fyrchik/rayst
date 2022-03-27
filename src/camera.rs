@@ -1,9 +1,11 @@
+use std::ops::Range;
+
 use crate::{
     ray::Ray,
     vec3::{random_in_unit_disc, Point, Vec3},
 };
 
-use rand::rngs::ThreadRng;
+use rand::{rngs::ThreadRng, Rng};
 
 pub struct Camera {
     origin: Point,
@@ -14,6 +16,7 @@ pub struct Camera {
     v: Vec3,
     w: Vec3,
     lens_radius: f64,
+    time: Range<f64>,
 }
 
 impl Default for Camera {
@@ -26,6 +29,7 @@ impl Default for Camera {
             16.0 / 9.0,
             2.0,
             1.0,
+            0.0..0.0,
         )
     }
 }
@@ -39,6 +43,7 @@ impl Camera {
         aspect_ratio: f64,
         aperture: f64,
         focus_dist: f64,
+        time: Range<f64>,
     ) -> Self {
         let h = (theta.to_radians() / 2.0).tan();
         let viewport_height = 2.0 * h;
@@ -63,6 +68,7 @@ impl Camera {
             v,
             w,
             lens_radius,
+            time,
         }
     }
 }
@@ -77,6 +83,7 @@ impl Camera {
             dir: self.lower_left_corner + u * self.horizontal + v * self.vertical
                 - self.origin
                 - offset,
+            time: r.gen_range(self.time.clone()),
         }
     }
 }

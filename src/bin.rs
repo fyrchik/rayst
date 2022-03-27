@@ -2,7 +2,8 @@ use std::error::Error;
 use std::io::{self, Write};
 use std::rc::Rc;
 
-use rayst::material::{Dielectric, Lambertian, Material, Metal};
+use rayst::material::{Dielectric, Lambertian, Metal};
+use rayst::moving_sphere::MovingSphere;
 use rayst::vec3::Vec3;
 use rayst::{
     camera::Camera, color::Color, hittable::Hittable, hittable_list::HittableList, ray::Ray,
@@ -13,10 +14,10 @@ use rand::{rngs::ThreadRng, Rng};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Image.
-    let aspect_ratio: f64 = 3.0 / 2.0;
-    let image_width: u32 = 1200;
+    let aspect_ratio: f64 = 16.0 / 9.0;
+    let image_width: u32 = 400;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel: u32 = 500;
+    let samples_per_pixel: u32 = 100;
     let max_depth = 50;
 
     // World.
@@ -37,6 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         aspect_ratio,
         aperture,
         dist_to_focus,
+        0.0..1.0,
     );
 
     let mut stderr = io::stderr();
@@ -101,21 +103,32 @@ fn random_scene() -> HittableList {
             );
 
             if (center - Point::new(4.0, 0.2, 0.0)).length() > 0.9 {
-                let material: Rc<dyn Material> = if choose_mat < 0.8 {
+                let object: Rc<dyn Hittable> = if choose_mat < 0.8 {
                     let albedo: Color = rng.gen::<Color>() + rng.gen::<Color>();
-                    Rc::new(Lambertian::new(albedo)) as Rc<dyn Material>
+                    let center2 = center + Vec3::y(rng.gen_range(0.0..0.5));
+                    Rc::new(MovingSphere::new(
+                        center,
+                        center2,
+                        0.0..1.0,
+                        0.2,
+                        Rc::new(Lambertian::new(albedo)),
+                    ))
                 } else if choose_mat < 0.95 {
                     let albedo: Color = Color::new(
                         rng.gen_range(0.5..1.0),
                         rng.gen_range(0.5..1.0),
                         rng.gen_range(0.5..1.0),
                     );
-                    Rc::new(Metal::new(albedo, rng.gen_range(0.0..0.5))) as Rc<dyn Material>
+                    Rc::new(Sphere::new(
+                        center,
+                        0.2,
+                        Rc::new(Metal::new(albedo, rng.gen_range(0.0..0.5))),
+                    ))
                 } else {
-                    Rc::new(Dielectric::new(1.5)) as Rc<dyn Material>
+                    Rc::new(Sphere::new(center, 0.2, Rc::new(Dielectric::new(1.5))))
                 };
 
-                world.add(Rc::new(Sphere::new(center, 0.2, material)))
+                world.add(object);
             }
         }
     }

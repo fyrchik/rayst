@@ -17,12 +17,12 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, rng: &mut ThreadRng, _: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+    fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
         let mut scatter_direction = rec.normal + random_in_unit_sphere(rng);
         if scatter_direction.near_zero() {
             scatter_direction = rec.normal;
         }
-        Some((Ray::new(rec.p, scatter_direction), self.albedo))
+        Some((Ray::new(rec.p, scatter_direction, r_in.time), self.albedo))
     }
 }
 
@@ -40,7 +40,11 @@ impl Metal {
 impl Material for Metal {
     fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
         let reflected = r_in.dir.normalize().reflect(rec.normal);
-        let scattered = Ray::new(rec.p, reflected + self.fuzz * random_in_unit_sphere(rng));
+        let scattered = Ray::new(
+            rec.p,
+            reflected + self.fuzz * random_in_unit_sphere(rng),
+            r_in.time,
+        );
         if scattered.dir.dot(rec.normal) > 0.0 {
             Some((scattered, self.albedo))
         } else {
@@ -86,6 +90,9 @@ impl Material for Dielectric {
         } else {
             unit_direction.refract(rec.normal, refraction_ratio)
         };
-        Some((Ray::new(rec.p, direction), Color::new(1.0, 1.0, 1.0)))
+        Some((
+            Ray::new(rec.p, direction, r_in.time),
+            Color::new(1.0, 1.0, 1.0),
+        ))
     }
 }
