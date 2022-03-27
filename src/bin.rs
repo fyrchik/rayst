@@ -2,6 +2,7 @@ use std::error::Error;
 use std::io::{self, Write};
 use std::rc::Rc;
 
+use rayst::bvh::BVHNode;
 use rayst::material::{Dielectric, Lambertian, Metal};
 use rayst::moving_sphere::MovingSphere;
 use rayst::vec3::Vec3;
@@ -15,13 +16,14 @@ use rand::{rngs::ThreadRng, Rng};
 fn main() -> Result<(), Box<dyn Error>> {
     // Image.
     let aspect_ratio: f64 = 16.0 / 9.0;
-    let image_width: u32 = 400;
+    let image_width: u32 = 1600;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel: u32 = 100;
+    let samples_per_pixel: u32 = 500;
     let max_depth = 50;
 
     // World.
-    let world = random_scene();
+    let scene = random_scene();
+    let world = BVHNode::from_hittable_list(scene, 0.0, 1.0);
 
     // Camera.
     let look_from = Point::new(13.0, 2.0, 3.0);
@@ -65,7 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn ray_color(rng: &mut ThreadRng, r: &Ray, world: &HittableList, depth: i32) -> Color {
+fn ray_color(rng: &mut ThreadRng, r: &Ray, world: &impl Hittable, depth: i32) -> Color {
     if depth <= 0 {
         return Color::default();
     }
@@ -104,7 +106,7 @@ fn random_scene() -> HittableList {
 
             if (center - Point::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 let object: Rc<dyn Hittable> = if choose_mat < 0.8 {
-                    let albedo: Color = rng.gen::<Color>() + rng.gen::<Color>();
+                    let albedo: Color = rng.gen::<Color>(); //+ rng.gen::<Color>();
                     let center2 = center + Vec3::y(rng.gen_range(0.0..0.5));
                     Rc::new(MovingSphere::new(
                         center,

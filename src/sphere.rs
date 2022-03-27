@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
+use crate::aabb::AABB;
 use crate::hittable::{HitRecord, Hittable};
 use crate::material::Material;
 use crate::ray::Ray;
-use crate::vec3::Point;
+use crate::vec3::{Point, Vec3};
 
 pub struct Sphere {
     center: Point,
@@ -52,6 +53,13 @@ impl Hittable for Sphere {
             r,
             self.material.clone(),
             outward_normal,
+        ))
+    }
+
+    fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<AABB> {
+        Some(AABB::new(
+            self.center - Vec3::new_eq(self.radius),
+            self.center + Vec3::new_eq(self.radius),
         ))
     }
 }

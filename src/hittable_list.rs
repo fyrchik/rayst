@@ -1,6 +1,9 @@
 use std::rc::Rc;
 
-use crate::hittable::{HitRecord, Hittable};
+use crate::{
+    aabb::AABB,
+    hittable::{HitRecord, Hittable},
+};
 
 #[derive(Default)]
 pub struct HittableList {
@@ -14,6 +17,10 @@ impl HittableList {
 
     pub fn clear(&mut self) {
         self.objects.clear()
+    }
+
+    pub fn as_slice_mut(&mut self) -> &mut [Rc<dyn Hittable>] {
+        &mut self.objects
     }
 }
 
@@ -30,5 +37,26 @@ impl Hittable for HittableList {
         }
 
         rec
+    }
+
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<AABB> {
+        if self.objects.is_empty() {
+            return None;
+        }
+
+        let mut out_box: Option<AABB> = None;
+
+        for obj in self.objects.iter() {
+            if let Some(temp_box) = obj.bounding_box(time0, time1) {
+                out_box = match out_box {
+                    None => Some(temp_box),
+                    Some(b) => Some(AABB::union(&b, &temp_box)),
+                };
+                continue;
+            }
+            return None;
+        }
+
+        out_box
     }
 }

@@ -1,4 +1,5 @@
 use crate::{
+    aabb::AABB,
     material::Material,
     ray::Ray,
     vec3::{Point, Vec3},
@@ -46,4 +47,6 @@ pub trait Hittable {
     // hit must return true if r intersects an object at point t
     // such that t_min < t < t_max.
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+    // bounding_box return AABB containing the object.
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<AABB>;
 }
