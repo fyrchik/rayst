@@ -8,6 +8,7 @@ pub mod material;
 pub mod moving_sphere;
 pub mod ray;
 pub mod sphere;
+pub mod texture;
 pub mod vec3;
 
 #[cfg(test)]

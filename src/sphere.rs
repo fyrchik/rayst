@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+use std::ops::Neg;
 use std::rc::Rc;
 
 use crate::aabb::AABB;
@@ -19,6 +21,12 @@ impl Sphere {
             radius,
             material,
         }
+    }
+
+    pub(crate) fn get_uv(p: &Point) -> (f64, f64) {
+        let theta = p.y.neg().acos();
+        let phi = p.z.neg().atan2(p.x) + PI;
+        (phi / (2.0 * PI), theta / PI)
     }
 }
 
@@ -46,11 +54,14 @@ impl Hittable for Sphere {
 
         let p = r.at(root);
         let outward_normal = (p - self.center) / self.radius;
+        let (u, v) = Self::get_uv(&outward_normal);
 
         Some(HitRecord::new(
             root,
             p,
             r,
+            u,
+            v,
             self.material.clone(),
             outward_normal,
         ))

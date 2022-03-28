@@ -1,4 +1,12 @@
-use crate::{color::Color, hittable::HitRecord, ray::Ray, vec3::random_in_unit_sphere};
+use std::rc::Rc;
+
+use crate::{
+    color::Color,
+    hittable::HitRecord,
+    ray::Ray,
+    texture::{SolidColor, Texture},
+    vec3::random_in_unit_sphere,
+};
 
 use rand::{rngs::ThreadRng, Rng};
 
@@ -7,11 +15,17 @@ pub trait Material {
 }
 
 pub struct Lambertian {
-    albedo: Color,
+    albedo: Rc<dyn Texture>,
 }
 
 impl Lambertian {
     pub fn new(albedo: Color) -> Self {
+        Self {
+            albedo: Rc::new(SolidColor::new(albedo)),
+        }
+    }
+
+    pub fn new_with_texture(albedo: Rc<dyn Texture>) -> Self {
         Self { albedo }
     }
 }
@@ -22,7 +36,10 @@ impl Material for Lambertian {
         if scatter_direction.near_zero() {
             scatter_direction = rec.normal;
         }
-        Some((Ray::new(rec.p, scatter_direction, r_in.time), self.albedo))
+        Some((
+            Ray::new(rec.p, scatter_direction, r_in.time),
+            self.albedo.value(rec.u, rec.v, &rec.p),
+        ))
     }
 }
 

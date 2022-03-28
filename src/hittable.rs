@@ -11,17 +11,29 @@ pub struct HitRecord {
     pub p: Point,
     pub normal: Vec3,
     pub t: f64,
+    pub u: f64,
+    pub v: f64,
     pub material: Rc<dyn Material>,
     pub front_face: bool,
 }
 
 impl HitRecord {
-    pub fn new(t: f64, p: Point, r: &Ray, mat: Rc<dyn Material>, outward_normal: Vec3) -> Self {
+    pub fn new(
+        t: f64,
+        p: Point,
+        r: &Ray,
+        u: f64,
+        v: f64,
+        mat: Rc<dyn Material>,
+        outward_normal: Vec3,
+    ) -> Self {
         let front_face = r.dir.dot(outward_normal) < 0.0;
 
         Self {
             t,
             p,
+            u,
+            v,
             material: mat,
             front_face,
             normal: if front_face {

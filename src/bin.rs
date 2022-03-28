@@ -5,6 +5,7 @@ use std::rc::Rc;
 use rayst::bvh::BVHNode;
 use rayst::material::{Dielectric, Lambertian, Metal};
 use rayst::moving_sphere::MovingSphere;
+use rayst::texture::CheckerTexture;
 use rayst::vec3::Vec3;
 use rayst::{
     camera::Camera, color::Color, hittable::Hittable, hittable_list::HittableList, ray::Ray,
@@ -16,27 +17,42 @@ use rand::{rngs::ThreadRng, Rng};
 fn main() -> Result<(), Box<dyn Error>> {
     // Image.
     let aspect_ratio: f64 = 16.0 / 9.0;
-    let image_width: u32 = 1600;
+    let image_width: u32 = 400;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel: u32 = 500;
+    let samples_per_pixel: u32 = 100;
     let max_depth = 50;
 
     // World.
-    let scene = random_scene();
+    let look_from;
+    let look_at;
+    let vfov;
+    let mut aperture = 0.0;
+    let scene = match 0 {
+        1 => {
+            look_from = Point::new(13.0, 2.0, 3.0);
+            look_at = Point::default();
+            vfov = 20.0;
+            aperture = 0.1;
+            random_scene()
+        }
+        _ => {
+            look_from = Point::new(13.0, 2.0, 3.0);
+            look_at = Point::default();
+            vfov = 20.0;
+            two_spheres()
+        }
+    };
     let world = BVHNode::from_hittable_list(scene, 0.0, 1.0);
 
     // Camera.
-    let look_from = Point::new(13.0, 2.0, 3.0);
-    let look_at = Point::default();
     let vup = Vec3::y(1.0);
     let dist_to_focus = 10.0;
-    let aperture = 0.1;
 
     let cam = Camera::new(
         look_from,
         look_at,
         vup,
-        20.0,
+        vfov,
         aspect_ratio,
         aperture,
         dist_to_focus,
@@ -86,11 +102,15 @@ fn ray_color(rng: &mut ThreadRng, r: &Ray, world: &impl Hittable, depth: i32) ->
 
 fn random_scene() -> HittableList {
     let mut world = HittableList::default();
-    let ground_material = Rc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
+
+    let checker = Rc::new(CheckerTexture::new(
+        Color::new(0.2, 0.3, 0.1),
+        Color::new(0.9, 0.9, 0.9),
+    ));
     world.add(Rc::new(Sphere::new(
         Point::y(-1000.0),
         1000.0,
-        ground_material,
+        Rc::new(Lambertian::new_with_texture(checker)),
     )));
 
     let mut rng = rand::thread_rng();
@@ -152,5 +172,25 @@ fn random_scene() -> HittableList {
         material3,
     )));
 
+    world
+}
+
+fn two_spheres() -> HittableList {
+    let mut world = HittableList::default();
+    let checker = Rc::new(CheckerTexture::new(
+        Color::new(0.2, 0.3, 0.1),
+        Color::new(0.9, 0.9, 0.9),
+    ));
+
+    world.add(Rc::new(Sphere::new(
+        Point::y(-10.0),
+        10.0,
+        Rc::new(Lambertian::new_with_texture(checker.clone())),
+    )));
+    world.add(Rc::new(Sphere::new(
+        Point::y(10.0),
+        10.0,
+        Rc::new(Lambertian::new_with_texture(checker)),
+    )));
     world
 }
