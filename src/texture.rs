@@ -1,6 +1,8 @@
 use std::rc::Rc;
 
-use crate::{color::Color, vec3::Point};
+use rand::prelude::ThreadRng;
+
+use crate::{color::Color, perlin::Perlin, vec3::Point};
 
 pub trait Texture {
     fn value(&self, u: f64, v: f64, p: &Point) -> Color;
@@ -52,5 +54,29 @@ impl Texture for CheckerTexture {
         } else {
             self.even.value(u, v, p)
         }
+    }
+}
+
+pub struct NoiseTexture {
+    noise: Perlin,
+    scale: f64,
+}
+
+impl NoiseTexture {
+    pub fn new(rng: &mut ThreadRng, scale: f64) -> Self {
+        Self {
+            noise: Perlin::new(rng),
+            scale,
+        }
+    }
+}
+
+impl Texture for NoiseTexture {
+    fn value(&self, _u: f64, _v: f64, p: &Point) -> Color {
+        //Color::new(1.0, 1.0, 1.0) * 0.5 * (1.0 + self.noise.noise(&(self.scale * p)))
+        //Color::new(1.0, 1.0, 1.0) * self.noise.turb(&(self.scale * p), 7)
+        Color::new(1.0, 1.0, 1.0)
+            * 0.5
+            * (1.0 + (self.scale * p.z + 10.0 * self.noise.turb(p, 7)).sin())
     }
 }

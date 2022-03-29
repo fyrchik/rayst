@@ -5,7 +5,7 @@ use std::rc::Rc;
 use rayst::bvh::BVHNode;
 use rayst::material::{Dielectric, Lambertian, Metal};
 use rayst::moving_sphere::MovingSphere;
-use rayst::texture::CheckerTexture;
+use rayst::texture::{CheckerTexture, NoiseTexture};
 use rayst::vec3::Vec3;
 use rayst::{
     camera::Camera, color::Color, hittable::Hittable, hittable_list::HittableList, ray::Ray,
@@ -35,11 +35,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             aperture = 0.1;
             random_scene()
         }
-        _ => {
+        2 => {
             look_from = Point::new(13.0, 2.0, 3.0);
             look_at = Point::default();
             vfov = 20.0;
             two_spheres()
+        }
+        _ => {
+            look_from = Point::new(13.0, 2.0, 3.0);
+            look_at = Point::default();
+            vfov = 20.0;
+            two_perlin_spheres()
         }
     };
     let world = BVHNode::from_hittable_list(scene, 0.0, 1.0);
@@ -191,6 +197,24 @@ fn two_spheres() -> HittableList {
         Point::y(10.0),
         10.0,
         Rc::new(Lambertian::new_with_texture(checker)),
+    )));
+    world
+}
+
+fn two_perlin_spheres() -> HittableList {
+    let mut rng = rand::thread_rng();
+    let mut world = HittableList::default();
+    let pertext = Rc::new(NoiseTexture::new(&mut rng, 4.0));
+
+    world.add(Rc::new(Sphere::new(
+        Point::y(-1000.0),
+        1000.0,
+        Rc::new(Lambertian::new_with_texture(pertext.clone())),
+    )));
+    world.add(Rc::new(Sphere::new(
+        Point::y(2.0),
+        2.0,
+        Rc::new(Lambertian::new_with_texture(pertext)),
     )));
     world
 }
