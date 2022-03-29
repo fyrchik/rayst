@@ -5,7 +5,7 @@ use std::rc::Rc;
 use rayst::bvh::BVHNode;
 use rayst::material::{Dielectric, Lambertian, Metal};
 use rayst::moving_sphere::MovingSphere;
-use rayst::texture::{CheckerTexture, NoiseTexture};
+use rayst::texture::{CheckerTexture, ImageTexture, NoiseTexture};
 use rayst::vec3::Vec3;
 use rayst::{
     camera::Camera, color::Color, hittable::Hittable, hittable_list::HittableList, ray::Ray,
@@ -41,11 +41,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             vfov = 20.0;
             two_spheres()
         }
-        _ => {
+        3 => {
             look_from = Point::new(13.0, 2.0, 3.0);
             look_at = Point::default();
             vfov = 20.0;
             two_perlin_spheres()
+        }
+        _ => {
+            look_from = Point::new(13.0, 2.0, 3.0);
+            look_at = Point::default();
+            vfov = 20.0;
+            earth()
         }
     };
     let world = BVHNode::from_hittable_list(scene, 0.0, 1.0);
@@ -216,5 +222,16 @@ fn two_perlin_spheres() -> HittableList {
         2.0,
         Rc::new(Lambertian::new_with_texture(pertext)),
     )));
+    world
+}
+
+fn earth() -> HittableList {
+    let earth_texture = Rc::new(ImageTexture::new("earthmap.jpg").unwrap());
+    let earth_surface = Rc::new(Lambertian::new_with_texture(earth_texture));
+    let globe = Rc::new(Sphere::new(Point::default(), 2.0, earth_surface));
+
+    let mut world = HittableList::default();
+    world.add(globe);
+
     world
 }

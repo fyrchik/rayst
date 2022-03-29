@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use image::{ImageBuffer, Rgb};
 use rand::prelude::ThreadRng;
 
 use crate::{color::Color, perlin::Perlin, vec3::Point};
@@ -78,5 +79,37 @@ impl Texture for NoiseTexture {
         Color::new(1.0, 1.0, 1.0)
             * 0.5
             * (1.0 + (self.scale * p.z + 10.0 * self.noise.turb(p, 7)).sin())
+    }
+}
+
+pub struct ImageTexture {
+    data: Option<ImageBuffer<Rgb<f32>, Vec<f32>>>,
+}
+
+impl ImageTexture {
+    pub fn new(filename: &str) -> Option<Self> {
+        image::io::Reader::open(filename)
+            .ok()
+            .and_then(|f| f.decode().ok())
+            .map(|img| Self {
+                data: Some(img.to_rgb32f()),
+            })
+    }
+}
+
+impl Texture for ImageTexture {
+    fn value(&self, u: f64, v: f64, _p: &Point) -> Color {
+        match self.data.as_ref() {
+            None => Color::new(0.0, 1.0, 1.0),
+            Some(data) => {
+                let u = u.clamp(0.0, 1.0);
+                let v = 1.0 - v.clamp(0.0, 1.0);
+                let i = ((u * (data.width() as f64)) as u32).min(data.width() - 1);
+                let j = ((v * (data.height() as f64)) as u32).min(data.height() - 1);
+                let pixel = data.get_pixel(i, j);
+
+                Color::new(pixel.0[0] as f64, pixel.0[1] as f64, pixel.0[2] as f64)
+            }
+        }
     }
 }
