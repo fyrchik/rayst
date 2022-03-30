@@ -1,5 +1,6 @@
 pub mod aabb;
 pub mod aarect;
+pub mod box3d;
 pub mod bvh;
 pub mod camera;
 pub mod color;

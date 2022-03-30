@@ -3,7 +3,9 @@ use std::io::{self, Write};
 use std::rc::Rc;
 
 use rayst::aarect::{XYRect, XZRect, YZRect};
+use rayst::box3d::Box3D;
 use rayst::bvh::BVHNode;
+use rayst::hittable::{RotateY, Translate};
 use rayst::material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use rayst::moving_sphere::MovingSphere;
 use rayst::texture::{CheckerTexture, ImageTexture, NoiseTexture};
@@ -79,7 +81,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let world = BVHNode::from_hittable_list(scene, 0.0, 1.0);
+    //let world = BVHNode::from_hittable_list(scene, 0.0, 1.0);
+    let world = scene;
 
     // Camera.
     let vup = Vec3::y(1.0);
@@ -315,7 +318,32 @@ fn cornell_box() -> HittableList {
         555.0,
         white.clone(),
     )));
-    world.add(Rc::new(XYRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white)));
+    world.add(Rc::new(XYRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    )));
+
+    let mut box1: Rc<dyn Hittable> = Rc::new(Box3D::new(
+        Point::default(),
+        Point::new(165.0, 330.0, 165.0),
+        white.clone(),
+    ));
+    box1 = Rc::new(RotateY::new(box1, 15.0));
+    box1 = Rc::new(Translate::new(box1, Vec3::new(265.0, 0.0, 295.0)));
+    world.add(box1);
+
+    let mut box2: Rc<dyn Hittable> = Rc::new(Box3D::new(
+        Point::default(),
+        Point::new(165.0, 165.0, 165.0),
+        white,
+    ));
+    box2 = Rc::new(RotateY::new(box2, -18.0));
+    box2 = Rc::new(Translate::new(box2, Vec3::new(130.0, 0.0, 65.0)));
+    world.add(box2);
 
     world
 }
