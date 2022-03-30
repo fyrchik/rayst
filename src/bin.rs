@@ -5,6 +5,7 @@ use std::rc::Rc;
 use rayst::aarect::{XYRect, XZRect, YZRect};
 use rayst::box3d::Box3D;
 use rayst::bvh::BVHNode;
+use rayst::constant_medium::ConstantMedium;
 use rayst::hittable::{RotateY, Translate};
 use rayst::material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use rayst::moving_sphere::MovingSphere;
@@ -68,7 +69,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             vfov = 20.0;
             simple_light()
         }
-        _ => {
+        6 => {
             aspect_ratio = 1.0;
             image_width = 600;
             samples_per_pixel = 400;
@@ -77,6 +78,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             look_at = Point::new(278.0, 278.0, 0.0);
             vfov = 40.0;
             cornell_box()
+        }
+        _ => {
+            aspect_ratio = 1.0;
+            image_width = 600;
+            samples_per_pixel = 200;
+            background = Color::default();
+            look_from = Point::new(278.0, 278.0, -800.0);
+            look_at = Point::new(278.0, 278.0, 0.0);
+            vfov = 40.0;
+            cornell_smoke()
         }
     };
 
@@ -343,6 +354,67 @@ fn cornell_box() -> HittableList {
     ));
     box2 = Rc::new(RotateY::new(box2, -18.0));
     box2 = Rc::new(Translate::new(box2, Vec3::new(130.0, 0.0, 65.0)));
+    world.add(box2);
+
+    world
+}
+
+fn cornell_smoke() -> HittableList {
+    let mut world = HittableList::default();
+
+    let red = Rc::new(Lambertian::new(Color::new(0.65, 0.05, 0.05)));
+    let white = Rc::new(Lambertian::new(Color::new(0.73, 0.73, 0.73)));
+    let green = Rc::new(Lambertian::new(Color::new(0.12, 0.45, 0.15)));
+    let light = Rc::new(DiffuseLight::new(Color::new(7.0, 7.0, 7.0)));
+
+    world.add(Rc::new(YZRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+    world.add(Rc::new(YZRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
+    world.add(Rc::new(XZRect::new(
+        113.0, 443.0, 127.0, 432.0, 554.0, light,
+    )));
+    world.add(Rc::new(XZRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        0.0,
+        white.clone(),
+    )));
+    world.add(Rc::new(XZRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    )));
+    world.add(Rc::new(XYRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    )));
+
+    let mut box1: Rc<dyn Hittable> = Rc::new(Box3D::new(
+        Point::default(),
+        Point::new(165.0, 330.0, 165.0),
+        white.clone(),
+    ));
+    box1 = Rc::new(RotateY::new(box1, 15.0));
+    box1 = Rc::new(Translate::new(box1, Vec3::new(265.0, 0.0, 295.0)));
+    box1 = Rc::new(ConstantMedium::new(box1, 0.01, Color::new(0.0, 0.0, 0.0)));
+    world.add(box1);
+
+    let mut box2: Rc<dyn Hittable> = Rc::new(Box3D::new(
+        Point::default(),
+        Point::new(165.0, 165.0, 165.0),
+        white,
+    ));
+    box2 = Rc::new(RotateY::new(box2, -18.0));
+    box2 = Rc::new(Translate::new(box2, Vec3::new(130.0, 0.0, 65.0)));
+    box2 = Rc::new(ConstantMedium::new(box2, 0.01, Color::new(1.0, 1.0, 1.0)));
     world.add(box2);
 
     world

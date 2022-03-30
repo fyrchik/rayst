@@ -4,6 +4,7 @@ pub mod box3d;
 pub mod bvh;
 pub mod camera;
 pub mod color;
+pub mod constant_medium;
 pub mod hittable;
 pub mod hittable_list;
 pub mod material;
