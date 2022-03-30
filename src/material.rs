@@ -5,12 +5,15 @@ use crate::{
     hittable::HitRecord,
     ray::Ray,
     texture::{SolidColor, Texture},
-    vec3::random_in_unit_sphere,
+    vec3::{random_in_unit_sphere, Point},
 };
 
 use rand::{rngs::ThreadRng, Rng};
 
 pub trait Material {
+    fn emitted(&self, _u: f64, _v: f64, _p: &Point) -> Color {
+        Color::default()
+    }
     fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)>;
 }
 
@@ -111,5 +114,30 @@ impl Material for Dielectric {
             Ray::new(rec.p, direction, r_in.time),
             Color::new(1.0, 1.0, 1.0),
         ))
+    }
+}
+
+pub struct DiffuseLight {
+    pub emit: Rc<dyn Texture>,
+}
+
+impl DiffuseLight {
+    pub fn new(c: Color) -> Self {
+        Self {
+            emit: Rc::new(SolidColor::new(c)),
+        }
+    }
+
+    pub fn new_with_texture(texture: Rc<dyn Texture>) -> Self {
+        Self { emit: texture }
+    }
+}
+
+impl Material for DiffuseLight {
+    fn scatter(&self, _rng: &mut ThreadRng, _r_in: &Ray, _rec: &HitRecord) -> Option<(Ray, Color)> {
+        None
+    }
+    fn emitted(&self, u: f64, v: f64, p: &Point) -> Color {
+        self.emit.value(u, v, p)
     }
 }

@@ -2,8 +2,9 @@ use std::error::Error;
 use std::io::{self, Write};
 use std::rc::Rc;
 
+use rayst::aarect::{XYRect, XZRect, YZRect};
 use rayst::bvh::BVHNode;
-use rayst::material::{Dielectric, Lambertian, Metal};
+use rayst::material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use rayst::moving_sphere::MovingSphere;
 use rayst::texture::{CheckerTexture, ImageTexture, NoiseTexture};
 use rayst::vec3::Vec3;
@@ -16,19 +17,20 @@ use rand::{rngs::ThreadRng, Rng};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Image.
-    let aspect_ratio: f64 = 16.0 / 9.0;
-    let image_width: u32 = 400;
-    let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel: u32 = 100;
+    let mut aspect_ratio: f64 = 16.0 / 9.0;
+    let mut image_width: u32 = 400;
+    let mut samples_per_pixel: u32 = 100;
     let max_depth = 50;
 
     // World.
     let look_from;
     let look_at;
     let vfov;
+    let background;
     let mut aperture = 0.0;
     let scene = match 0 {
         1 => {
+            background = Color::new(0.7, 0.8, 1.0);
             look_from = Point::new(13.0, 2.0, 3.0);
             look_at = Point::default();
             vfov = 20.0;
@@ -36,24 +38,47 @@ fn main() -> Result<(), Box<dyn Error>> {
             random_scene()
         }
         2 => {
+            background = Color::new(0.7, 0.8, 1.0);
             look_from = Point::new(13.0, 2.0, 3.0);
             look_at = Point::default();
             vfov = 20.0;
             two_spheres()
         }
         3 => {
+            background = Color::new(0.7, 0.8, 1.0);
             look_from = Point::new(13.0, 2.0, 3.0);
             look_at = Point::default();
             vfov = 20.0;
             two_perlin_spheres()
         }
-        _ => {
+        4 => {
+            background = Color::new(0.7, 0.8, 1.0);
             look_from = Point::new(13.0, 2.0, 3.0);
             look_at = Point::default();
             vfov = 20.0;
             earth()
         }
+        5 => {
+            background = Color::default();
+            samples_per_pixel = 400;
+            look_from = Point::new(26.0, 3.0, 6.0);
+            look_at = Point::y(2.0);
+            vfov = 20.0;
+            simple_light()
+        }
+        _ => {
+            aspect_ratio = 1.0;
+            image_width = 600;
+            samples_per_pixel = 400;
+            background = Color::default();
+            look_from = Point::new(278.0, 278.0, -800.0);
+            look_at = Point::new(278.0, 278.0, 0.0);
+            vfov = 40.0;
+            cornell_box()
+        }
     };
+
+    let image_height = (image_width as f64 / aspect_ratio) as u32;
     let world = BVHNode::from_hittable_list(scene, 0.0, 1.0);
 
     // Camera.
@@ -84,7 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let u = (i as f64 + rng.gen::<f64>()) / (image_width - 1) as f64;
                 let v = (j as f64 + rng.gen::<f64>()) / (image_height - 1) as f64;
                 let r = cam.get_ray(&mut rng, u, v);
-                c += ray_color(&mut rng, &r, &world, max_depth);
+                c += ray_color(&mut rng, &r, background, &world, max_depth);
             }
             println!("{}", c.adjust_and_format(samples_per_pixel));
         }
@@ -95,21 +120,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn ray_color(rng: &mut ThreadRng, r: &Ray, world: &impl Hittable, depth: i32) -> Color {
+fn ray_color(
+    rng: &mut ThreadRng,
+    r: &Ray,
+    background: Color,
+    world: &impl Hittable,
+    depth: i32,
+) -> Color {
     if depth <= 0 {
         return Color::default();
     }
 
     if let Some(rec) = world.hit(r, 0.001, f64::INFINITY) {
         if let Some((scattered, attenuation)) = rec.material.scatter(rng, r, &rec) {
-            return attenuation * ray_color(rng, &scattered, world, depth - 1);
+            return attenuation * ray_color(rng, &scattered, background, world, depth - 1);
         }
-        return Color::default();
+        return rec.material.emitted(rec.u, rec.v, &rec.p);
     }
 
-    let dir = r.dir.normalize();
-    let t = 0.5 * (dir.y + 1.0);
-    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+    background
 }
 
 fn random_scene() -> HittableList {
@@ -232,6 +261,61 @@ fn earth() -> HittableList {
 
     let mut world = HittableList::default();
     world.add(globe);
+
+    world
+}
+
+fn simple_light() -> HittableList {
+    let mut world = HittableList::default();
+
+    let pertext = Rc::new(NoiseTexture::new(&mut rand::thread_rng(), 4.0));
+    world.add(Rc::new(Sphere::new(
+        Point::y(-1000.0),
+        1000.0,
+        Rc::new(Lambertian::new_with_texture(pertext.clone())),
+    )));
+    world.add(Rc::new(Sphere::new(
+        Point::y(2.0),
+        2.0,
+        Rc::new(Lambertian::new_with_texture(pertext)),
+    )));
+
+    let difflight = Rc::new(DiffuseLight::new(Color::new(4.0, 4.0, 4.0)));
+    world.add(Rc::new(XYRect::new(3.0, 5.0, 1.0, 3.0, -2.0, difflight)));
+
+    world
+}
+
+fn cornell_box() -> HittableList {
+    let mut world = HittableList::default();
+
+    let red = Rc::new(Lambertian::new(Color::new(0.65, 0.05, 0.05)));
+    let white = Rc::new(Lambertian::new(Color::new(0.73, 0.73, 0.73)));
+    let green = Rc::new(Lambertian::new(Color::new(0.12, 0.45, 0.15)));
+    let light = Rc::new(DiffuseLight::new(Color::new(15.0, 15.0, 15.0)));
+
+    world.add(Rc::new(YZRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+    world.add(Rc::new(YZRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
+    world.add(Rc::new(XZRect::new(
+        213.0, 343.0, 227.0, 332.0, 554.0, light,
+    )));
+    world.add(Rc::new(XZRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        0.0,
+        white.clone(),
+    )));
+    world.add(Rc::new(XZRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    )));
+    world.add(Rc::new(XYRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white)));
 
     world
 }
