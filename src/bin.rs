@@ -1,5 +1,4 @@
 use std::error::Error;
-use std::io::{self, Write};
 use std::rc::Rc;
 
 use rayst::aarect::{XYRect, XZRect, YZRect};
@@ -16,7 +15,7 @@ use rayst::{
     sphere::Sphere, vec3::Point,
 };
 
-use rand::{rngs::ThreadRng, Rng};
+use rand::Rng;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Image.
@@ -25,55 +24,43 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut samples_per_pixel: u32 = 100;
     let max_depth = 50;
 
+    // Random number generator.
+    let mut rng = rayst::thread_rng();
+
     // World.
-    let look_from;
-    let look_at;
-    let vfov;
-    let background;
+    let mut look_from = Point::new(13.0, 2.0, 3.0);
+    let mut look_at = Point::default();
+    let mut vfov = 20.0;
+    let mut background = Color::default();
     let mut aperture = 0.0;
     let scene = match 0 {
         1 => {
             background = Color::new(0.7, 0.8, 1.0);
-            look_from = Point::new(13.0, 2.0, 3.0);
-            look_at = Point::default();
-            vfov = 20.0;
             aperture = 0.1;
             random_scene()
         }
         2 => {
             background = Color::new(0.7, 0.8, 1.0);
-            look_from = Point::new(13.0, 2.0, 3.0);
-            look_at = Point::default();
-            vfov = 20.0;
             two_spheres()
         }
         3 => {
             background = Color::new(0.7, 0.8, 1.0);
-            look_from = Point::new(13.0, 2.0, 3.0);
-            look_at = Point::default();
-            vfov = 20.0;
-            two_perlin_spheres()
+            two_perlin_spheres(&mut rng)
         }
         4 => {
             background = Color::new(0.7, 0.8, 1.0);
-            look_from = Point::new(13.0, 2.0, 3.0);
-            look_at = Point::default();
-            vfov = 20.0;
             earth()
         }
         5 => {
-            background = Color::default();
             samples_per_pixel = 400;
             look_from = Point::new(26.0, 3.0, 6.0);
             look_at = Point::y(2.0);
-            vfov = 20.0;
-            simple_light()
+            simple_light(&mut rng)
         }
         6 => {
             aspect_ratio = 1.0;
             image_width = 600;
             samples_per_pixel = 400;
-            background = Color::default();
             look_from = Point::new(278.0, 278.0, -800.0);
             look_at = Point::new(278.0, 278.0, 0.0);
             vfov = 40.0;
@@ -83,7 +70,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             aspect_ratio = 1.0;
             image_width = 600;
             samples_per_pixel = 200;
-            background = Color::default();
             look_from = Point::new(278.0, 278.0, -800.0);
             look_at = Point::new(278.0, 278.0, 0.0);
             vfov = 40.0;
@@ -110,12 +96,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         0.0..1.0,
     );
 
-    let mut stderr = io::stderr();
-    let mut rng = rand::thread_rng();
-
     println!("P3\n{} {}\n255", image_width, image_height);
     for j in (0..image_height).rev() {
-        write!(&mut stderr, "\rScanlines remaining: {}", j)?;
+        eprint!("\rScanlines remaining: {}", j);
 
         for i in 0..image_width {
             let mut c = Color::default();
@@ -129,13 +112,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    write!(&mut stderr, "\nDone.\n")?;
+    eprintln!("\nDone.");
 
     Ok(())
 }
 
 fn ray_color(
-    rng: &mut ThreadRng,
+    rng: &mut rayst::Rng,
     r: &Ray,
     background: Color,
     world: &impl Hittable,
@@ -250,10 +233,9 @@ fn two_spheres() -> HittableList {
     world
 }
 
-fn two_perlin_spheres() -> HittableList {
-    let mut rng = rand::thread_rng();
+fn two_perlin_spheres(rng: &mut rayst::Rng) -> HittableList {
     let mut world = HittableList::default();
-    let pertext = Rc::new(NoiseTexture::new(&mut rng, 4.0));
+    let pertext = Rc::new(NoiseTexture::new(rng, 4.0));
 
     world.add(Rc::new(Sphere::new(
         Point::y(-1000.0),
@@ -279,10 +261,10 @@ fn earth() -> HittableList {
     world
 }
 
-fn simple_light() -> HittableList {
+fn simple_light(rng: &mut rayst::Rng) -> HittableList {
     let mut world = HittableList::default();
 
-    let pertext = Rc::new(NoiseTexture::new(&mut rand::thread_rng(), 4.0));
+    let pertext = Rc::new(NoiseTexture::new(rng, 4.0));
     world.add(Rc::new(Sphere::new(
         Point::y(-1000.0),
         1000.0,

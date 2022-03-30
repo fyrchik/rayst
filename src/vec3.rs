@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub};
 
-use rand::{rngs::ThreadRng, Rng};
+use rand::Rng;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Vec3 {
@@ -79,7 +79,7 @@ impl Vec3 {
     }
 }
 
-pub fn random_in_unit_sphere(rng: &mut ThreadRng) -> Vec3 {
+pub fn random_in_unit_sphere(rng: &mut crate::Rng) -> Vec3 {
     loop {
         let p = Vec3::new(
             rng.gen_range(-1.0..1.0),
@@ -93,7 +93,7 @@ pub fn random_in_unit_sphere(rng: &mut ThreadRng) -> Vec3 {
     }
 }
 
-pub fn random_in_hemisphere(rng: &mut ThreadRng, normal: Vec3) -> Vec3 {
+pub fn random_in_hemisphere(rng: &mut crate::Rng, normal: Vec3) -> Vec3 {
     let p = random_in_unit_sphere(rng);
     if p.dot(normal) > 0.0 {
         p
@@ -102,7 +102,7 @@ pub fn random_in_hemisphere(rng: &mut ThreadRng, normal: Vec3) -> Vec3 {
     }
 }
 
-pub fn random_in_unit_disc(rng: &mut ThreadRng) -> Vec3 {
+pub fn random_in_unit_disc(rng: &mut crate::Rng) -> Vec3 {
     loop {
         let x = rng.gen_range(-1.0..1.0);
         let y = rng.gen_range(-1.0..1.0);

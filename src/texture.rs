@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use image::{ImageBuffer, Rgb};
-use rand::prelude::ThreadRng;
 
 use crate::{color::Color, perlin::Perlin, vec3::Point};
 
@@ -64,7 +63,7 @@ pub struct NoiseTexture {
 }
 
 impl NoiseTexture {
-    pub fn new(rng: &mut ThreadRng, scale: f64) -> Self {
+    pub fn new(rng: &mut crate::Rng, scale: f64) -> Self {
         Self {
             noise: Perlin::new(rng),
             scale,

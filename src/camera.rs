@@ -5,7 +5,7 @@ use crate::{
     vec3::{random_in_unit_disc, Point, Vec3},
 };
 
-use rand::{rngs::ThreadRng, Rng};
+use rand::Rng;
 
 pub struct Camera {
     origin: Point,
@@ -74,7 +74,7 @@ impl Camera {
 }
 
 impl Camera {
-    pub fn get_ray(&self, r: &mut ThreadRng, u: f64, v: f64) -> Ray {
+    pub fn get_ray(&self, r: &mut crate::Rng, u: f64, v: f64) -> Ray {
         let rd = self.lens_radius * random_in_unit_disc(r);
         let offset = self.u * rd.x + self.v * rd.y;
 

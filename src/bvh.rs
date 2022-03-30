@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, rc::Rc};
 
-use rand::{rngs::ThreadRng, Rng};
+use rand::Rng;
 
 use crate::{
     aabb::AABB,
@@ -18,11 +18,11 @@ pub struct BVHNode {
 
 impl BVHNode {
     pub fn from_hittable_list(mut hlist: HittableList, time0: f64, time1: f64) -> Self {
-        let mut rng = rand::thread_rng();
+        let mut rng = crate::thread_rng();
         Self::new(&mut rng, hlist.as_slice_mut(), time0, time1)
     }
 
-    pub fn new(rng: &mut ThreadRng, lst: &mut [Rc<dyn Hittable>], time0: f64, time1: f64) -> Self {
+    pub fn new(rng: &mut crate::Rng, lst: &mut [Rc<dyn Hittable>], time0: f64, time1: f64) -> Self {
         let comparator = match rng.gen_range(0..=2) as u32 {
             0 => Self::compare::<0>,
             1 => Self::compare::<1>,

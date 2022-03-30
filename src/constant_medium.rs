@@ -4,11 +4,12 @@ use rand::Rng;
 
 use crate::{
     aabb::AABB,
+    color::Color,
     hittable::{HitRecord, Hittable},
     material::{Isotropic, Material},
     ray::Ray,
     texture::Texture,
-    vec3::Vec3, color::Color,
+    vec3::Vec3,
 };
 
 pub struct ConstantMedium {
@@ -25,11 +26,7 @@ impl ConstantMedium {
             neg_inv_density: -d.recip(),
         }
     }
-    pub fn new_with_texture(
-        boundary: Rc<dyn Hittable>,
-        d: f64,
-        texture: Rc<dyn Texture>,
-    ) -> Self {
+    pub fn new_with_texture(boundary: Rc<dyn Hittable>, d: f64, texture: Rc<dyn Texture>) -> Self {
         Self {
             boundary,
             phase: Rc::new(Isotropic::new_with_texture(texture)),
@@ -56,8 +53,8 @@ impl Hittable for ConstantMedium {
                     if debugging {
                         eprintln!("t_min={}, t_max={}", rec.t, rec2.t);
                     }
-                
-					let r1t = rec.t.max(t_min);
+
+                    let r1t = rec.t.max(t_min);
                     let r2t = rec2.t.min(t_max);
                     if r1t >= r2t {
                         return None;

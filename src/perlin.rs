@@ -1,4 +1,4 @@
-use rand::{rngs::ThreadRng, Rng};
+use rand::Rng;
 
 use crate::vec3::{Point, Vec3};
 
@@ -12,7 +12,7 @@ pub struct Perlin {
 impl Perlin {
     const POINT_COUNT: usize = 256;
 
-    pub fn new(rng: &mut ThreadRng) -> Self {
+    pub fn new(rng: &mut crate::Rng) -> Self {
         let mut s = Self {
             ranfloat: [Vec3::default(); Self::POINT_COUNT],
             perm_x: [0; Self::POINT_COUNT],
@@ -111,14 +111,14 @@ impl Perlin {
         c0 * (1.0 - w) + c1 * w
     }
 
-    pub fn generate_perm(rng: &mut ThreadRng, p: &mut [u16; Self::POINT_COUNT]) {
+    pub fn generate_perm(rng: &mut crate::Rng, p: &mut [u16; Self::POINT_COUNT]) {
         for (i, v) in p.iter_mut().enumerate() {
             *v = i as u16;
         }
         Self::permute(rng, p)
     }
 
-    pub fn permute(rng: &mut ThreadRng, p: &mut [u16; Self::POINT_COUNT]) {
+    pub fn permute(rng: &mut crate::Rng, p: &mut [u16; Self::POINT_COUNT]) {
         for i in (1..p.len()).rev() {
             let target = rng.gen_range(0..i);
             p.swap(i, target)

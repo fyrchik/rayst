@@ -8,13 +8,13 @@ use crate::{
     vec3::{random_in_unit_sphere, Point},
 };
 
-use rand::{rngs::ThreadRng, Rng};
+use rand::Rng;
 
 pub trait Material {
     fn emitted(&self, _u: f64, _v: f64, _p: &Point) -> Color {
         Color::default()
     }
-    fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)>;
+    fn scatter(&self, rng: &mut crate::Rng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)>;
 }
 
 pub struct Lambertian {
@@ -34,7 +34,7 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+    fn scatter(&self, rng: &mut crate::Rng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
         let mut scatter_direction = rec.normal + random_in_unit_sphere(rng);
         if scatter_direction.near_zero() {
             scatter_direction = rec.normal;
@@ -58,7 +58,7 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+    fn scatter(&self, rng: &mut crate::Rng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
         let reflected = r_in.dir.normalize().reflect(rec.normal);
         let scattered = Ray::new(
             rec.p,
@@ -93,7 +93,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+    fn scatter(&self, rng: &mut crate::Rng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
         let refraction_ratio = if rec.front_face {
             self.ri.recip()
         } else {
@@ -134,7 +134,12 @@ impl DiffuseLight {
 }
 
 impl Material for DiffuseLight {
-    fn scatter(&self, _rng: &mut ThreadRng, _r_in: &Ray, _rec: &HitRecord) -> Option<(Ray, Color)> {
+    fn scatter(
+        &self,
+        _rng: &mut crate::Rng,
+        _r_in: &Ray,
+        _rec: &HitRecord,
+    ) -> Option<(Ray, Color)> {
         None
     }
     fn emitted(&self, u: f64, v: f64, p: &Point) -> Color {
@@ -159,7 +164,7 @@ impl Isotropic {
 }
 
 impl Material for Isotropic {
-    fn scatter(&self, rng: &mut ThreadRng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+    fn scatter(&self, rng: &mut crate::Rng, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
         Some((
             Ray::new(rec.p, random_in_unit_sphere(rng), r_in.time),
             self.albedo.value(rec.u, rec.v, &rec.p),
